@@ -1,5 +1,4 @@
 import org.apache.commons.cli.*;
-import org.apache.commons.lang3.time.StopWatch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +9,7 @@ import java.util.concurrent.Future;
 
 public class Main {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        StopWatch stopWatch = new StopWatch();
+//        StopWatch stopWatch = new StopWatch();
         Options options = ArgParser.getParser();
         CommandLine cmd = null;
 
@@ -32,7 +31,7 @@ public class Main {
         int start = Integer.parseInt(range[0]);
         int end = Integer.parseInt(range[1]);
 
-        stopWatch.start();
+//        stopWatch.start();
         String ip = PortScan.getIp(url);
 
         System.out.println("Scanning ports for ip: " + ip + " (" + url + ")");
@@ -44,7 +43,7 @@ public class Main {
         for(int i = start ; i <= end ; i++ )
             futures.add(PortScan.portIsOpen(es , ip , i, tcp, udp, prot)) ;
         es.shutdown();
-        stopWatch.stop();
+//        stopWatch.stop();
 
         int countOpenPorts = 0 ;
         for(Future<PortInfo> f : futures)
@@ -54,7 +53,7 @@ public class Main {
             }
 
         System.out.println("\nTotal " + countOpenPorts + " ports open");
-        System.out.println("Done scan " + (end - start + 1) + " ports in " +
-                String.format("%.5f", (stopWatch.getTime() / 1000.0) / 60) + " min");
+//        System.out.println("Done scan " + (end - start + 1) + " ports in " +
+//                String.format("%.5f", (stopWatch.getTime() / 1000.0) / 60) + " min");
     }
 }

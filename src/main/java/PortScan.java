@@ -2,19 +2,19 @@ import protocols.Applied;
 import protocols.Transport;
 
 import javax.net.ssl.*;
-import java.io.*;
+import java.io.IOException;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.util.Date;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 public class PortScan {
     public static Future<PortInfo> portIsOpen(final ExecutorService es, String ip, int port,
                                               boolean tcp, boolean udp, boolean checkProtocols) {
         return es.submit(() -> {
-            PortInfo portInfo = tryToConnect(ip, port, 200, tcp, udp, checkProtocols);
+            PortInfo portInfo = tryToConnect(ip, port, 100, tcp, udp, checkProtocols);
             if (portInfo == null)
                 portInfo = new PortInfo(port);
 
@@ -32,9 +32,9 @@ public class PortScan {
         PortInfo temp = checkTCP(ip, port, timeout, checkProtocols);
         if (temp == null)
             temp = checkUDP(ip, port, timeout, checkProtocols);
-        else
-            if (Transport.NONE != checkSSL(ip, port, timeout))
-                temp.setTransportLayer(Transport.SSL);
+//        else
+//            if (Transport.NONE != checkSSL(ip, port, timeout))
+//                temp.setTransportLayer(Transport.SSL);
             return temp;
     }
 
@@ -54,23 +54,25 @@ public class PortScan {
     }
 
     private static PortInfo checkUDP(String ip , int port, int timeout, boolean checkProtocols) {
+        DatagramSocket ds;
+        byte[] buff = new byte[128];
         try {
-            DatagramSocket datagramSocket = new DatagramSocket();
-            byte[] pingData = "PING".getBytes(StandardCharsets.UTF_8);
-            InetSocketAddress address = new InetSocketAddress(ip, port);
-            datagramSocket.connect(address);
-            DatagramPacket sendPacket = new DatagramPacket(pingData, pingData.length, address);
-            datagramSocket.send(sendPacket);
-            //boolean temp = datagramSocket.isConnected();
-            byte[] receiveData = new byte[8];
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            datagramSocket.setSoTimeout(timeout);
-            datagramSocket.receive(receivePacket);
+            ds = new DatagramSocket();
+            DatagramPacket dp = new DatagramPacket(buff,buff.length);
+            ds.setSoTimeout(timeout);
+            ds.connect(new InetSocketAddress(ip, port));
+            ds.send(dp);
+            ds.isConnected();
+
+            dp = new DatagramPacket(buff,buff.length);
+            ds.receive(dp);
+            ds.close();
+
             Applied protocol = Applied.NONE;
             if (checkProtocols)
                 protocol = CheckerProtocol.checkAppliedProtocol(port);
             return new PortInfo(port, true, Transport.UDP, protocol);
-        } catch (IOException e1) {
+        } catch (IOException e){
             return null;
         }
     }
